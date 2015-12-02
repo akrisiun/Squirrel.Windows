@@ -46,6 +46,9 @@
     <Reference Include="ICSharpCode.SharpZipLib">
       <HintPath>..\..\ext\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
+    <Reference Include="Splat">
+      <HintPath>..\..\ext\Splat.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -57,9 +60,6 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Xml" />
-    <Reference Include="Splat, Version=1.6.2.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\..\packages\Splat.1.6.2\lib\Net45\Splat.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\SolutionAssemblyInfo.cs">

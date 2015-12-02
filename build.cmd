@@ -1,7 +1,7 @@
-git submodule update --init --recursive
-git pull origin
+call git submodule update --init --recursive
+call git pull origin
 
-nuget restore
+@REM nuget restore
 msbuild
 
 @pause
