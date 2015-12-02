@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Mono.Cecil;
+//using Mono.Cecil;
 
 namespace Squirrel
 {
@@ -17,47 +17,49 @@ namespace Squirrel
         {
             var di = new DirectoryInfo(directory);
 
-            return di.EnumerateFiles()
-                .Where(x => x.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                .Select(x => x.FullName)
-                .Where(x => (GetPESquirrelAwareVersion(x) ?? -1) >= minimumVersion)
-                .ToList();
+            //    return di.EnumerateFiles()
+            //        .Where(x => x.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            //        .Select(x => x.FullName)
+            //        .Where(x => (GetPESquirrelAwareVersion(x) ?? -1) >= minimumVersion)
+            //        .ToList();
+
+            return null;
         }
 
-        public static int? GetPESquirrelAwareVersion(string executable)
-        {
-            if (!File.Exists(executable)) return null;
-            var fullname = Path.GetFullPath(executable);
+        //public static int? GetPESquirrelAwareVersion(string executable)
+        //{
+        //    if (!File.Exists(executable)) return null;
+        //    var fullname = Path.GetFullPath(executable);
 
-            return Utility.Retry<int?>(() => 
-                GetAssemblySquirrelAwareVersion(fullname) ?? GetVersionBlockSquirrelAwareValue(fullname));
-        }
+        //    return Utility.Retry<int?>(() => 
+        //        GetAssemblySquirrelAwareVersion(fullname) ?? GetVersionBlockSquirrelAwareValue(fullname));
+        //}
 
-        static int? GetAssemblySquirrelAwareVersion(string executable)
-        {
-            try {
-                var assembly = AssemblyDefinition.ReadAssembly(executable);
-                if (!assembly.HasCustomAttributes) return null;
+        //static int? GetAssemblySquirrelAwareVersion(string executable)
+        //{
+        //    try {
+        //        var assembly = AssemblyDefinition.ReadAssembly(executable);
+        //        if (!assembly.HasCustomAttributes) return null;
 
-                var attrs = assembly.CustomAttributes;
-                var attribute = attrs.FirstOrDefault(x => {
-                    if (x.AttributeType.FullName != typeof(AssemblyMetadataAttribute).FullName) return false;
-                    if (x.ConstructorArguments.Count != 2) return false;
-                    return x.ConstructorArguments[0].Value.ToString() == "SquirrelAwareVersion";
-                });
+        //        var attrs = assembly.CustomAttributes;
+        //        var attribute = attrs.FirstOrDefault(x => {
+        //            if (x.AttributeType.FullName != typeof(AssemblyMetadataAttribute).FullName) return false;
+        //            if (x.ConstructorArguments.Count != 2) return false;
+        //            return x.ConstructorArguments[0].Value.ToString() == "SquirrelAwareVersion";
+        //        });
 
-                if (attribute == null) return null;
+        //        if (attribute == null) return null;
 
-                int result;
-                if (!Int32.TryParse(attribute.ConstructorArguments[1].Value.ToString(), NumberStyles.Integer, CultureInfo.CurrentCulture, out result)) {
-                    return null;
-                }
+        //        int result;
+        //        if (!Int32.TryParse(attribute.ConstructorArguments[1].Value.ToString(), NumberStyles.Integer, CultureInfo.CurrentCulture, out result)) {
+        //            return null;
+        //        }
 
-                return result;
-            } 
-            catch (FileLoadException) { return null; }
-            catch (BadImageFormatException) { return null; }
-        }
+        //        return result;
+        //    } 
+        //    catch (FileLoadException) { return null; }
+        //    catch (BadImageFormatException) { return null; }
+        //}
 
         static int? GetVersionBlockSquirrelAwareValue(string executable)
         {
@@ -70,7 +72,8 @@ namespace Squirrel
             if (!NativeMethods.GetFileVersionInfo(executable, IntPtr.Zero, size, buf)) return null;
 
             IntPtr result; int resultSize;
-            if (!NativeMethods.VerQueryValue(buf, "\\StringFileInfo\\040904B0\\SquirrelAwareVersion", out result, out resultSize)) {
+            if (!NativeMethods.VerQueryValue(buf, "\\StringFileInfo\\040904B0\\SquirrelAwareVersion", out result, out resultSize))
+            {
                 return null;
             }
 

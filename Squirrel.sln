@@ -439,6 +439,10 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C1D40624-A484-438A-B846-052F321C89D1} = {ED657D2C-F8A0-4012-A64F-7367D41BE4D2}
+		{50DF07EF-7C73-4031-8DD6-E3AE0D188371} = {ED657D2C-F8A0-4012-A64F-7367D41BE4D2}
+	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		Policies = $0
 		$0.TextStylePolicy = $1
