@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Squirrel;
-using Octokit;
+//using Octokit;
 using System.Reflection;
 using System.Net;
 
@@ -33,55 +33,57 @@ namespace SyncReleases
             }
         }
 
-        public static async Task SyncFromGitHub(string repoUrl, string token, DirectoryInfo releaseDirectoryInfo)
+        public static 
+            // async Task 
+            void SyncFromGitHub(string repoUrl, string token, DirectoryInfo releaseDirectoryInfo)
         {
             var repoUri = new Uri(repoUrl);
-            var userAgent = new ProductHeaderValue("SyncReleases", Assembly.GetExecutingAssembly().GetName().Version.ToString());
+            //var userAgent = new ProductHeaderValue("SyncReleases", Assembly.GetExecutingAssembly().GetName().Version.ToString());
 
-            var client = new GitHubClient(userAgent, repoUri);
+            //var client = new GitHubClient(userAgent, repoUri);
 
-            if (token != null) {
-                client.Credentials = new Credentials(token);
-            }
+            //if (token != null) {
+            //    client.Credentials = new Credentials(token);
+            //}
 
             var nwo = nwoFromRepoUrl(repoUrl);
-            var releases = (await client.Release.GetAll(nwo.Item1, nwo.Item2))
-                .OrderByDescending(x => x.PublishedAt)
-                .Take(5);
+            //var releases = (await client.Release.GetAll(nwo.Item1, nwo.Item2))
+            //    .OrderByDescending(x => x.PublishedAt)
+            //    .Take(5);
 
-            await releases.ForEachAsync(async release => {
-                // NB: Why do I have to double-fetch the release assets? It's already in GetAll
-                var assets = await client.Release.GetAllAssets(nwo.Item1, nwo.Item2, release.Id);
+            //await releases.ForEachAsync(async release => {
+            //    // NB: Why do I have to double-fetch the release assets? It's already in GetAll
+            //    var assets = await client.Release.GetAllAssets(nwo.Item1, nwo.Item2, release.Id);
 
-                await assets
-                    .Where(x => x.Name.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
-                    .Where(x => {
-                        var fi = new FileInfo(Path.Combine(releaseDirectoryInfo.FullName, x.Name));
-                        return !(fi.Exists && fi.Length == x.Size);
-                    })
-                    .ForEachAsync(async x => {
-                        var target = new FileInfo(Path.Combine(releaseDirectoryInfo.FullName, x.Name));
-                        if (target.Exists) target.Delete();
+            //    await assets
+            //        .Where(x => x.Name.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
+            //        .Where(x => {
+            //            var fi = new FileInfo(Path.Combine(releaseDirectoryInfo.FullName, x.Name));
+            //            return !(fi.Exists && fi.Length == x.Size);
+            //        })
+            //        .ForEachAsync(async x => {
+            //            var target = new FileInfo(Path.Combine(releaseDirectoryInfo.FullName, x.Name));
+            //            if (target.Exists) target.Delete();
 
-                        await retryAsync(3, async () => {
-                            var hc = new HttpClient();
-                            var rq = new HttpRequestMessage(HttpMethod.Get, x.Url);
-                            rq.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/octet-stream"));
-                            rq.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue(userAgent.Name, userAgent.Version));
-                            if (token != null) {
-                                rq.Headers.Add("Authorization", "Bearer " + token);
-                            }
+            //            await retryAsync(3, async () => {
+            //                var hc = new HttpClient();
+            //                var rq = new HttpRequestMessage(HttpMethod.Get, x.Url);
+            //                rq.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/octet-stream"));
+            //                rq.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue(userAgent.Name, userAgent.Version));
+            //                if (token != null) {
+            //                    rq.Headers.Add("Authorization", "Bearer " + token);
+            //                }
 
-                            var resp = await hc.SendAsync(rq);
-                            resp.EnsureSuccessStatusCode();
+            //                var resp = await hc.SendAsync(rq);
+            //                resp.EnsureSuccessStatusCode();
 
-                            using (var from = await resp.Content.ReadAsStreamAsync())
-                            using (var to = File.OpenWrite(target.FullName)) {
-                                await from.CopyToAsync(to);
-                            }
-                        });
-                    });
-            });
+            //                using (var from = await resp.Content.ReadAsStreamAsync())
+            //                using (var to = File.OpenWrite(target.FullName)) {
+            //                    await from.CopyToAsync(to);
+            //                }
+            //            });
+            //        });
+            //});
 
             var entries = releaseDirectoryInfo.GetFiles("*.nupkg")
                 .AsParallel()

@@ -63,7 +63,7 @@ namespace Squirrel
 
     public class ReleasePackage : IEnableLogger, IReleasePackage
     {
-        IEnumerable<IPackage> localPackageCache;
+        //IEnumerable<IPackage> localPackageCache;
 
         public ReleasePackage(string inputPackageFile, bool isReleasePackage = false)
         {

@@ -4,11 +4,22 @@ using System.Linq;
 using System.Text;
 using Squirrel.Tests.TestHelpers;
 using Xunit;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Assert = Xunit.Assert;
 
 namespace Squirrel.Tests
 {
+
+
+    [TestClass]
     public class CheckForUpdateTests
     {
+        [TestMethod]
+        public void MsTest()
+        {
+            // NewReleasesShouldBeDetected();
+        }
+
         [Fact]
         public void NewReleasesShouldBeDetected()
         {

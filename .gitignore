@@ -177,3 +177,6 @@ nunit-Squirrel.Tests.xml
 
 ## Pester Test Output
 tests/Test.xml
+
+.packages/
+packages/
