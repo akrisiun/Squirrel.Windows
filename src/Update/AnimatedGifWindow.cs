@@ -2,15 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
 using System.Windows.Threading;
@@ -20,6 +17,9 @@ namespace Squirrel.Update
 {
     public class AnimatedGifWindow : Window
     {
+        public static AnimatedGifWindow Wnd { get; private set; }
+        public static Thread Thread { get; private set; }
+
         public AnimatedGifWindow()
         {
             var img = new Image();
@@ -29,24 +29,26 @@ namespace Squirrel.Update
                 Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
                 "background.gif");
 
-            if (File.Exists(source)) {
+            if (File.Exists(source))
+            {
                 src = new BitmapImage();
                 src.BeginInit();
                 src.StreamSource = File.OpenRead(source);
                 src.EndInit();
-            
+
                 ImageBehavior.SetAnimatedSource(img, src);
                 this.Content = img;
                 this.Width = src.Width;
                 this.Height = src.Height;
             }
-                        
+
             this.AllowsTransparency = true;
             this.WindowStyle = WindowStyle.None;
             this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             this.ShowInTaskbar = true;
             this.Topmost = true;
-            this.TaskbarItemInfo = new TaskbarItemInfo {
+            this.TaskbarItemInfo = new TaskbarItemInfo
+            {
                 ProgressState = TaskbarItemProgressState.Normal
             };
             this.Title = "Installing...";
@@ -57,19 +59,26 @@ namespace Squirrel.Update
         {
             var wnd = default(AnimatedGifWindow);
 
-            var thread = new Thread(() => {
+            Thread = new Thread(() =>
+            {
                 if (token.IsCancellationRequested) return;
 
-                try {
+                try
+                {
                     Task.Delay(initialDelay, token).ContinueWith(t => { return true; }).Wait();
-                } catch (Exception) {
+                }
+                catch (Exception)
+                {
                     return;
                 }
 
                 wnd = new AnimatedGifWindow();
+
+                Wnd = wnd;
                 wnd.Show();
 
-                Task.Delay(TimeSpan.FromSeconds(5.0), token).ContinueWith(t => {
+                Task.Delay(TimeSpan.FromSeconds(5.0), token).ContinueWith(t =>
+                {
                     if (t.IsCanceled) return;
                     wnd.Dispatcher.BeginInvoke(new Action(() => wnd.Topmost = false));
                 });
@@ -77,17 +86,21 @@ namespace Squirrel.Update
                 token.Register(() => wnd.Dispatcher.BeginInvoke(new Action(wnd.Close)));
                 EventHandler<int> progressSourceOnProgress = ((sender, p) =>
                     wnd.Dispatcher.BeginInvoke(
-                        new Action(() => wnd.TaskbarItemInfo.ProgressValue = p/100.0)));
+                        new Action(() => wnd.TaskbarItemInfo.ProgressValue = p / 100.0)));
+
                 progressSource.Progress += progressSourceOnProgress;
-                try {
+                try
+                {
                     (new Application()).Run(wnd);
-                } finally {
+                }
+                finally
+                {
                     progressSource.Progress -= progressSourceOnProgress;
                 }
             });
 
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
+            Thread.SetApartmentState(ApartmentState.STA);
+            Thread.Start();
         }
     }
 }

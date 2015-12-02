@@ -52,16 +52,20 @@ namespace Squirrel.Update
             //AnimatedGifWindow.ShowWindow(TimeSpan.FromMilliseconds(0), animatedGifWindowToken.Token);
             //Thread.Sleep(10 * 60 * 1000);
 
+            int res = 1;
             using (var logger = new SetupLogLogger(isUninstalling) {Level = LogLevel.Info}) {
                 Locator.CurrentMutable.Register(() => logger, typeof (Splat.ILogger));
                 try {
                     return executeCommandLine(args);
                 } catch (Exception ex) {
                     logger.Write("Unhandled exception: " + ex, LogLevel.Fatal);
-                    throw;
+                    Console.Write("Unhandled exception: " + ex.ToString());
+                    // throw;
+                    res = 0;
                 }
                 // Ideally we would deregister the logger from the Locator before it was disposed - this is a hazard as it is at the moment
             }
+            return res;
         }
 
         int executeCommandLine(string[] args)
@@ -128,6 +132,20 @@ namespace Squirrel.Update
                     { "no-msi", "Don't generate an MSI package", v => noMsi = true},
                 };
 
+                var progressSource = new ProgressSource();
+                AnimatedGifWindow.ShowWindow(TimeSpan.FromSeconds(0), // 4), 
+                    animatedGifWindowToken.Token, progressSource);
+
+                // AnimatedGifWindow.Thread.Start();
+                // progressSource.Raise;
+                Thread.Sleep(200);
+
+                var wnd = AnimatedGifWindow.Wnd;
+                if (wnd != null)
+                {
+                    progressSource.Raise(10);
+                }
+
                 opts.Parse(args);
 
                 // NB: setupIcon and icon are just aliases for compatibility
@@ -136,16 +154,19 @@ namespace Squirrel.Update
 
                 if (updateAction == UpdateAction.Unset) {
                     ShowHelp();
+
+                    Thread.Sleep(2000);
+                    progressSource.Raise(90);
+                    animatedGifWindowToken.Cancel();
                     return -1;
                 }
 
                 switch (updateAction) {
 #if !MONO
                 case UpdateAction.Install:
-                    var progressSource = new ProgressSource();
-                    if (!silentInstall) { 
-                        AnimatedGifWindow.ShowWindow(TimeSpan.FromSeconds(4), animatedGifWindowToken.Token, progressSource);
-                    }
+                    //if (!silentInstall) { 
+                    //    AnimatedGifWindow.ShowWindow(TimeSpan.FromSeconds(4), animatedGifWindowToken.Token, progressSource);
+                    //}
 
                     Install(silentInstall, progressSource, Path.GetFullPath(target)).Wait();
                     animatedGifWindowToken.Cancel();
@@ -307,7 +328,8 @@ namespace Squirrel.Update
             }
         }
 
-        public void Releasify(string package, string targetDir = null, string packagesDir = null, string bootstrapperExe = null, string backgroundGif = null, string signingOpts = null, string baseUrl = null, string setupIcon = null, bool generateMsi = true)
+        public void Releasify(string package, string targetDir = null, string packagesDir = null, string bootstrapperExe = null, string backgroundGif = null, string signingOpts = null, string baseUrl = null, string setupIcon = null, 
+            bool generateMsi = false) // true)
         {
             if (baseUrl != null) {
                 if (!Utility.IsHttpUrl(baseUrl)) {
@@ -386,37 +408,37 @@ namespace Squirrel.Update
 
             ReleaseEntry.WriteReleaseFile(releaseEntries, releaseFilePath);
 
-            var targetSetupExe = Path.Combine(di.FullName, "Setup.exe");
-            var newestFullRelease = releaseEntries.MaxBy(x => x.Version).Where(x => !x.IsDelta).First();
+            //var targetSetupExe = Path.Combine(di.FullName, "Setup.exe");
+            //var newestFullRelease = releaseEntries.MaxBy(x => x.Version).Where(x => !x.IsDelta).First();
 
-            File.Copy(bootstrapperExe, targetSetupExe, true);
-            var zipPath = createSetupEmbeddedZip(Path.Combine(di.FullName, newestFullRelease.Filename), di.FullName, backgroundGif, signingOpts).Result;
+            //File.Copy(bootstrapperExe, targetSetupExe, true);
+            //var zipPath = createSetupEmbeddedZip(Path.Combine(di.FullName, newestFullRelease.Filename), di.FullName, backgroundGif, signingOpts).Result;
 
-            var writeZipToSetup = findExecutable("WriteZipToSetup.exe");
+            //var writeZipToSetup = findExecutable("WriteZipToSetup.exe");
 
-            try {
-                var result = Utility.InvokeProcessAsync(writeZipToSetup, String.Format("\"{0}\" \"{1}\"", targetSetupExe, zipPath), CancellationToken.None).Result;
-                if (result.Item1 != 0) throw new Exception("Failed to write Zip to Setup.exe!\n\n" + result.Item2);
-            } catch (Exception ex) {
-                this.Log().ErrorException("Failed to update Setup.exe with new Zip file", ex);
-            } finally {
-                File.Delete(zipPath);
-            }
+            //try {
+            //    var result = Utility.InvokeProcessAsync(writeZipToSetup, String.Format("\"{0}\" \"{1}\"", targetSetupExe, zipPath), CancellationToken.None).Result;
+            //    if (result.Item1 != 0) throw new Exception("Failed to write Zip to Setup.exe!\n\n" + result.Item2);
+            //} catch (Exception ex) {
+            //    this.Log().ErrorException("Failed to update Setup.exe with new Zip file", ex);
+            //} finally {
+            //    File.Delete(zipPath);
+            //}
 
-            Utility.Retry(() =>
-                setPEVersionInfoAndIcon(targetSetupExe, new ZipPackage(package), setupIcon).Wait());
+            //Utility.Retry(() =>
+            //    setPEVersionInfoAndIcon(targetSetupExe, new ZipPackage(package), setupIcon).Wait());
 
-            if (signingOpts != null) {
-                signPEFile(targetSetupExe, signingOpts).Wait();
-            }
+            //if (signingOpts != null) {
+            //    signPEFile(targetSetupExe, signingOpts).Wait();
+            //}
 
-            if (generateMsi) {
-                createMsiPackage(targetSetupExe, new ZipPackage(package)).Wait();
+            //if (generateMsi) {
+            //    createMsiPackage(targetSetupExe, new ZipPackage(package)).Wait();
 
-                if (signingOpts != null) {
-                    signPEFile(targetSetupExe.Replace(".exe", ".msi"), signingOpts).Wait();
-                }
-            }
+            //    if (signingOpts != null) {
+            //        signPEFile(targetSetupExe.Replace(".exe", ".msi"), signingOpts).Wait();
+            //    }
+            //}
         }
 
         public void Shortcut(string exeName, string shortcutArgs, string processStartArgs, string icon)
@@ -644,73 +666,73 @@ namespace Squirrel.Update
             return exe;
         }
 
-        static async Task createMsiPackage(string setupExe, IPackage package)
-        {
-            var pathToWix = pathToWixTools();
-            var setupExeDir = Path.GetDirectoryName(setupExe);
-            var company = String.Join(",", package.Authors);
+        //static async Task createMsiPackage(string setupExe, IPackage package)
+        //{
+        //    var pathToWix = pathToWixTools();
+        //    var setupExeDir = Path.GetDirectoryName(setupExe);
+        //    var company = String.Join(",", package.Authors);
 
-            var templateText = File.ReadAllText(Path.Combine(pathToWix, "template.wxs"));
-            var templateResult = CopStache.Render(templateText, new Dictionary<string, string> {
-                { "Id", package.Id },
-                { "Title", package.Title },
-                { "Author", company },
-                { "Summary", package.Summary ?? package.Description ?? package.Id },
-            });
+        //    var templateText = File.ReadAllText(Path.Combine(pathToWix, "template.wxs"));
+        //    var templateResult = CopStache.Render(templateText, new Dictionary<string, string> {
+        //        { "Id", package.Id },
+        //        { "Title", package.Title },
+        //        { "Author", company },
+        //        { "Summary", package.Summary ?? package.Description ?? package.Id },
+        //    });
 
-            var wxsTarget = Path.Combine(setupExeDir, "Setup.wxs");
-            File.WriteAllText(wxsTarget, templateResult, Encoding.UTF8);
+        //    var wxsTarget = Path.Combine(setupExeDir, "Setup.wxs");
+        //    File.WriteAllText(wxsTarget, templateResult, Encoding.UTF8);
 
-            var candleParams = String.Format("-nologo -ext WixNetFxExtension -out \"{0}\" \"{1}\"", wxsTarget.Replace(".wxs", ".wixobj"), wxsTarget);
-            var processResult = await Utility.InvokeProcessAsync(
-                Path.Combine(pathToWix, "candle.exe"), candleParams, CancellationToken.None);
+        //    var candleParams = String.Format("-nologo -ext WixNetFxExtension -out \"{0}\" \"{1}\"", wxsTarget.Replace(".wxs", ".wixobj"), wxsTarget);
+        //    var processResult = await Utility.InvokeProcessAsync(
+        //        Path.Combine(pathToWix, "candle.exe"), candleParams, CancellationToken.None);
 
-            if (processResult.Item1 != 0) {
-                var msg = String.Format(
-                    "Failed to compile WiX template, command invoked was: '{0} {1}'\n\nOutput was:\n{2}", 
-                    "candle.exe", candleParams, processResult.Item2);
+        //    if (processResult.Item1 != 0) {
+        //        var msg = String.Format(
+        //            "Failed to compile WiX template, command invoked was: '{0} {1}'\n\nOutput was:\n{2}", 
+        //            "candle.exe", candleParams, processResult.Item2);
 
-                throw new Exception(msg);
-            }
+        //        throw new Exception(msg);
+        //    }
 
-            var lightParams = String.Format("-ext WixNetFxExtension -sval -out \"{0}\" \"{1}\"", wxsTarget.Replace(".wxs", ".msi"), wxsTarget.Replace(".wxs", ".wixobj"));
-            processResult = await Utility.InvokeProcessAsync(
-                Path.Combine(pathToWix, "light.exe"), lightParams, CancellationToken.None);
+        //    var lightParams = String.Format("-ext WixNetFxExtension -sval -out \"{0}\" \"{1}\"", wxsTarget.Replace(".wxs", ".msi"), wxsTarget.Replace(".wxs", ".wixobj"));
+        //    processResult = await Utility.InvokeProcessAsync(
+        //        Path.Combine(pathToWix, "light.exe"), lightParams, CancellationToken.None);
 
-            if (processResult.Item1 != 0) {
-                var msg = String.Format(
-                    "Failed to link WiX template, command invoked was: '{0} {1}'\n\nOutput was:\n{2}", 
-                    "light.exe", lightParams, processResult.Item2);
+        //    if (processResult.Item1 != 0) {
+        //        var msg = String.Format(
+        //            "Failed to link WiX template, command invoked was: '{0} {1}'\n\nOutput was:\n{2}", 
+        //            "light.exe", lightParams, processResult.Item2);
 
-                throw new Exception(msg);
-            }
+        //        throw new Exception(msg);
+        //    }
 
-            var toDelete = new[] {
-                wxsTarget,
-                wxsTarget.Replace(".wxs", ".wixobj"),
-                wxsTarget.Replace(".wxs", ".wixpdb"),
-            };
+        //    var toDelete = new[] {
+        //        wxsTarget,
+        //        wxsTarget.Replace(".wxs", ".wixobj"),
+        //        wxsTarget.Replace(".wxs", ".wixpdb"),
+        //    };
 
-            await Utility.ForEachAsync(toDelete, x => Utility.DeleteFileHarder(x));
-        }
+        //    await Utility.ForEachAsync(toDelete, x => Utility.DeleteFileHarder(x));
+        //}
 
-        static string pathToWixTools()
-        {
-            var ourPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location); 
+        //static string pathToWixTools()
+        //{
+        //    var ourPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location); 
 
-            // Same Directory? (i.e. released)
-            if (File.Exists(Path.Combine(ourPath, "candle.exe"))) {
-                return ourPath;
-            }
+        //    // Same Directory? (i.e. released)
+        //    if (File.Exists(Path.Combine(ourPath, "candle.exe"))) {
+        //        return ourPath;
+        //    }
 
-            // Debug Mode (i.e. in vendor)
-            var debugPath = Path.Combine(ourPath, "..", "..", "..", "vendor", "wix", "candle.exe");
-            if (File.Exists(debugPath)) {
-                return Path.GetFullPath(debugPath);
-            }
+        //    // Debug Mode (i.e. in vendor)
+        //    var debugPath = Path.Combine(ourPath, "..", "..", "..", "vendor", "wix", "candle.exe");
+        //    if (File.Exists(debugPath)) {
+        //        return Path.GetFullPath(debugPath);
+        //    }
 
-            throw new Exception("WiX tools can't be found");
-        }
+        //    throw new Exception("WiX tools can't be found");
+        //}
 
         static string getAppNameFromDirectory(string path = null)
         {
